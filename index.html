@@ -10,7 +10,33 @@
 <body>
     <script src="js/script.js" defer></script>
     <div class="container">
-        
+        <h1>Tic Tac Toe</h1>
+        <div class="settings">
+            <div>
+                <label for="p1name">&#10006; P1 name</label>
+                <input type="text" name="p1name" id="p1name">
+            </div>
+            <div>
+                <label for="p2name">&#11096; P2 name</label>
+                <input type="text" name="p2name" id="p2name">
+            </div>
+            <div>
+                <button id="start-btn">Start</button>
+                <button id="restart-btn">Cancel</button>
+            </div>
+        </div>
+        <div class="status">Press Start</div>
+        <div class="gameboard">
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell cross"></div>
+            <div class="cell"></div>
+        </div>
     </div>
 </body>
 </html>
