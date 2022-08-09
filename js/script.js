@@ -3,10 +3,12 @@
 const Gameboard = (() => {
     let board = [];
     const messageBar = document.querySelector(".status");
+    // displays a message on the bar above the game board
     const message = (msg) => {
         messageBar.textContent = msg;
     };
     
+    // Creates a new board and places it in the DOM, replacing the old board.
     const create = () => {
         const gridSize = 9;
         board = [];
@@ -27,11 +29,16 @@ const Gameboard = (() => {
         initialBoard.parentNode.replaceChild(newBoard, initialBoard);
     };
 
+    // adds a specific class to a specific cell
     const mark = (cellno, sign) => {
         // console.log(board);
         board[cellno].classList.add(sign);
     };
 
+    // returns an object with:
+    // - Player 1's marked cells (as a string)
+    // - Player 2's marked cells (as a string)
+    // - a count of the remaining empty cells
     const getBoard = () => {
         p1board = "";
         p2board = "";
@@ -54,6 +61,10 @@ const Gameboard = (() => {
         };
     };
 
+    // called when a win is detected
+    // takes a string made of digits as an argument (representing cell indexes of a winning triplet, e.g. "012").
+    // and adds the "win" class to the corresponding cells in the board
+    // also removes the click event listener for all cells
     const markWin = (cells) => {
         board.forEach((element) => {
             element.removeEventListener("click", cellClickHandler);
@@ -63,6 +74,8 @@ const Gameboard = (() => {
             }
         });
     }
+    // called when a draw is detected
+    // adds the "draw" class to all cells in the board
     const gameOverDraw = () => {
         board.forEach((element) => {
             element.classList.add('draw');
@@ -87,31 +100,44 @@ const Player = (id, playerName, playerSign) => {
 
 // IIFE to create the GameController Object and all its functions.
 const GameController = (() => {
+    // private object storing the state of the game
     const game = {
         activePlayer: null,
         gameOver: false,
         players: [],
     };
 
+    // returns the state of the game
     const getState = () => {
         return game;
     };
 
+    // called when the start button is pressed and player names are validated
     const startGame = (p1name, p2name) => {
+        // reset the game state
         game.players[0] = Player(0, p1name, "cross");
         game.players[1] = Player(1, p2name, "circle");
-        Gameboard.create();
         game.activePlayer = 0;
         game.gameOver = false;
+
+        // Reset the game board and announces it's p1's turn
+        Gameboard.create();
         Gameboard.message(`${game.players[game.activePlayer].playerName}'s turn`);
     };
+    // called after a cell is clicked and the game is not over yet
+    // toggles the active player and announces it's the other player's turn
     const changeTurn = () => {
         game.activePlayer === 0 ? (game.activePlayer = 1) : (game.activePlayer = 0);
         Gameboard.message(`${game.players[game.activePlayer].playerName}'s turn`);
     };
+
+    // called after every click to check if the player who clicked the cell has won the game,
+    // or if the player clicked the last available cell (in which case it triggers a draw)
     const checkWinnerOnClick = (player) => {
+        // all possible winning triplets 
         let winmap = ["012", "345", "678", "036", "147", "258", "048", "246"];
         let boardState = Gameboard.getBoard();
+        // get a string containing all cells marked by the active player
         let playerState = player.playerSign === "cross" ? boardState.p1 : boardState.p2;
         // console.log(`Current board state for ${player.playerName}: ${playerState}`);
 
@@ -119,21 +145,24 @@ const GameController = (() => {
         let checker = (reference, testedArray) => testedArray.every(digit => reference.includes(digit));
 
         let match = false;
+        // loop through all possible winning triplets and check if one of them is a subset of the player's state
         for (const candidate of winmap) {
             // console.log(`checking if current state contains all cells in ${candidate}`);
             if (checker([...playerState],[...candidate])) {
+                // if a match is found, store it in a variable
                 match = candidate;
-                // return match
             };
         }
+        // if a match is found, i.e. it's not false, call the functions necessary to declare a win and end the game
         if (match) {
             Gameboard.markWin(match);
             Gameboard.message(`${player.playerName} won`);
             game.gameOver = true;
             return
         }
-        if (boardState.remainingCells === 0) {
-            console.log('test');
+        // if nobody won and there are no remaining cells, end the game and call a draw 
+        else if (boardState.remainingCells === 0) {
+            // console.log('test');
             game.gameOver = true;
             Gameboard.gameOverDraw();
             Gameboard.message('It\'s a draw!');
@@ -145,15 +174,19 @@ const GameController = (() => {
     return { startGame, getState, changeTurn, checkWinnerOnClick };
 })();
 
+// Event Listener callback function to handle a click on a cell
 function cellClickHandler() {
+    //This shouldn't ever be called, it's here just for safety
     if (GameController.getState().activePlayer === null) {
         console.log("uh-oh");
         return;
     }
     let thisCellNumber = parseInt(this.dataset.cellno);
     let game = GameController.getState();
+    // mark the cell and remove the event listener from it
     Gameboard.mark(thisCellNumber, game.players[game.activePlayer].playerSign);
     this.removeEventListener("click", cellClickHandler);
+    // check if the player made a game-ending move
     GameController.checkWinnerOnClick(game.players[game.activePlayer])
     if (GameController.getState().gameOver === false) {
         GameController.changeTurn();
@@ -165,6 +198,7 @@ function clickStart() {
     let p1name = document.querySelector("#p1name");
     let p2name = document.querySelector("#p2name");
 
+    //Basic checks on player names 
     if (p1name.value === p2name.value) {
         Gameboard.message(`player names must be different`);
         return;
