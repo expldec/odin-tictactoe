@@ -32,6 +32,7 @@ const Gameboard = (() => {
     const mark = (cellno, sign) => {
         // console.log(board);
         board[cellno].classList.add(sign);
+        board[cellno].removeEventListener("click", cellClickHandler);
     };
 
     // returns an object with:
@@ -175,10 +176,8 @@ const GameController = (() => {
 
     const clickCell = (cellno) => {
         cellToClick = document.querySelector(`[data-cellno="${cellno}"]`);
-
         // mark the cell and remove the event listener from it
         Gameboard.mark(cellno, game.players[game.activePlayer].playerSign);
-        cellToClick.removeEventListener("click", cellClickHandler);
         // check if the player made a game-ending move
         GameController.checkWinnerOnClick(game.players[game.activePlayer]);
         if (GameController.getState().gameOver === false) {
