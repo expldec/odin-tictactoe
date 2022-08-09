@@ -1,4 +1,3 @@
-
 //IIFE to create the gameboard object, which stores the board state and handles the DOM elements.
 const Gameboard = (() => {
     let board = [];
@@ -7,7 +6,7 @@ const Gameboard = (() => {
     const message = (msg) => {
         messageBar.textContent = msg;
     };
-    
+
     // Creates a new board and places it in the DOM, replacing the old board.
     const create = () => {
         const gridSize = 9;
@@ -42,22 +41,25 @@ const Gameboard = (() => {
     const getBoard = () => {
         p1board = "";
         p2board = "";
+        wholeBoard = [];
         remainingCells = 0;
         board.forEach((element) => {
             if (element.classList.contains("cross")) {
                 p1board += element.dataset.cellno;
-            }
-            else if (element.classList.contains("circle")) {
+                wholeBoard.push("0");
+            } else if (element.classList.contains("circle")) {
                 p2board += element.dataset.cellno;
-            }
-            else {
+                wholeBoard.push("1");
+            } else {
                 remainingCells++;
+                wholeBoard.push(null);
             }
         });
         return {
             p1: p1board,
             p2: p2board,
-            remainingCells
+            wholeBoard,
+            remainingCells,
         };
     };
 
@@ -70,17 +72,17 @@ const Gameboard = (() => {
             element.removeEventListener("click", cellClickHandler);
             if ([...cells].includes(element.dataset.cellno)) {
                 // console.log(element.dataset.cellno)
-                element.classList.add('win')
+                element.classList.add("win");
             }
         });
-    }
+    };
     // called when a draw is detected
     // adds the "draw" class to all cells in the board
     const gameOverDraw = () => {
         board.forEach((element) => {
-            element.classList.add('draw');
-        })
-    }
+            element.classList.add("draw");
+        });
+    };
 
     return {
         create,
@@ -97,9 +99,14 @@ const Player = (id, playerName, playerSign) => {
     return { id, playerName, playerSign };
 };
 
-
 // IIFE to create the GameController Object and all its functions.
 const GameController = (() => {
+    // all possible winning triplets
+    const winmap = ["012", "345", "678", "036", "147", "258", "048", "246"];
+
+    // function to check if all items in an array are contained within a reference array.
+    const isSubset = (testedArray, reference) => testedArray.every((digit) => reference.includes(digit));
+
     // private object storing the state of the game
     const game = {
         activePlayer: null,
@@ -134,44 +141,58 @@ const GameController = (() => {
     // called after every click to check if the player who clicked the cell has won the game,
     // or if the player clicked the last available cell (in which case it triggers a draw)
     const checkWinnerOnClick = (player) => {
-        // all possible winning triplets 
-        let winmap = ["012", "345", "678", "036", "147", "258", "048", "246"];
         let boardState = Gameboard.getBoard();
         // get a string containing all cells marked by the active player
         let playerState = player.playerSign === "cross" ? boardState.p1 : boardState.p2;
         // console.log(`Current board state for ${player.playerName}: ${playerState}`);
 
-        // function to check if all items in an array are contained within a reference array.
-        let checker = (reference, testedArray) => testedArray.every(digit => reference.includes(digit));
-
         let match = false;
         // loop through all possible winning triplets and check if one of them is a subset of the player's state
         for (const candidate of winmap) {
             // console.log(`checking if current state contains all cells in ${candidate}`);
-            if (checker([...playerState],[...candidate])) {
+            if (isSubset([...candidate], [...playerState])) {
                 // if a match is found, store it in a variable
                 match = candidate;
-            };
+            }
         }
         // if a match is found, i.e. it's not false, call the functions necessary to declare a win and end the game
         if (match) {
             Gameboard.markWin(match);
             Gameboard.message(`${player.playerName} won`);
             game.gameOver = true;
-            return
+            return;
         }
-        // if nobody won and there are no remaining cells, end the game and call a draw 
+        // if nobody won and there are no remaining cells, end the game and call a draw
         else if (boardState.remainingCells === 0) {
             // console.log('test');
             game.gameOver = true;
             Gameboard.gameOverDraw();
-            Gameboard.message('It\'s a draw!');
+            Gameboard.message("It's a draw!");
         }
         // match ? console.log(`${player.playerName} won`) : console.log('nobody won');
         return match;
     };
 
-    return { startGame, getState, changeTurn, checkWinnerOnClick };
+    const clickCell = (cellno) => {
+        cellToClick = document.querySelector(`[data-cellno="${cellno}"]`);
+
+        // mark the cell and remove the event listener from it
+        Gameboard.mark(cellno, game.players[game.activePlayer].playerSign);
+        cellToClick.removeEventListener("click", cellClickHandler);
+        // check if the player made a game-ending move
+        GameController.checkWinnerOnClick(game.players[game.activePlayer]);
+        if (GameController.getState().gameOver === false) {
+            GameController.changeTurn();
+        }
+    };
+
+    return {
+        startGame,
+        getState,
+        clickCell,
+        changeTurn,
+        checkWinnerOnClick,
+    };
 })();
 
 // Event Listener callback function to handle a click on a cell
@@ -182,23 +203,14 @@ function cellClickHandler() {
         return;
     }
     let thisCellNumber = parseInt(this.dataset.cellno);
-    let game = GameController.getState();
-    // mark the cell and remove the event listener from it
-    Gameboard.mark(thisCellNumber, game.players[game.activePlayer].playerSign);
-    this.removeEventListener("click", cellClickHandler);
-    // check if the player made a game-ending move
-    GameController.checkWinnerOnClick(game.players[game.activePlayer])
-    if (GameController.getState().gameOver === false) {
-        GameController.changeTurn();
-    }
-    // console.log(thisCellNumber);
+    GameController.clickCell(thisCellNumber);
 }
 
 function clickStart() {
     let p1name = document.querySelector("#p1name");
     let p2name = document.querySelector("#p2name");
 
-    //Basic checks on player names 
+    //Basic checks on player names
     if (p1name.value === p2name.value) {
         Gameboard.message(`player names must be different`);
         return;
@@ -226,6 +238,5 @@ document.querySelector("#start-btn").addEventListener("click", clickStart);
 // Gameboard.mark(3,'circle');
 // Gameboard.mark(5,'cross');
 // GameController.checkWinnerOnClick(0,GameController.getState().players[0])
-
 
 // console.log(GameController.checkWinnerOnClick(GameController.getState().players[0]))
