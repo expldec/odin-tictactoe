@@ -57,8 +57,6 @@ const Gameboard = (() => {
             }
         });
         return {
-            p1: p1board,
-            p2: p2board,
             wholeBoard,
             remainingCells,
         };
@@ -143,19 +141,7 @@ const GameController = (() => {
     // or if the player clicked the last available cell (in which case it triggers a draw)
     const checkWinnerOnClick = (player) => {
         let boardState = Gameboard.getBoard();
-        // get a string containing all cells marked by the active player
-        let playerState = player.playerSign === "cross" ? boardState.p1 : boardState.p2;
-        // console.log(`Current board state for ${player.playerName}: ${playerState}`);
-
-        let match = false;
-        // loop through all possible winning triplets and check if one of them is a subset of the player's state
-        for (const candidate of winmap) {
-            // console.log(`checking if current state contains all cells in ${candidate}`);
-            if (isSubset([...candidate], [...playerState])) {
-                // if a match is found, store it in a variable
-                match = candidate;
-            }
-        }
+        let match = isWin(boardState.wholeBoard,player.id)
         // if a match is found, i.e. it's not false, call the functions necessary to declare a win and end the game
         if (match) {
             Gameboard.markWin(match);
@@ -179,11 +165,47 @@ const GameController = (() => {
         // mark the cell and remove the event listener from it
         Gameboard.mark(cellno, game.players[game.activePlayer].playerSign);
         // check if the player made a game-ending move
-        GameController.checkWinnerOnClick(game.players[game.activePlayer]);
-        if (GameController.getState().gameOver === false) {
-            GameController.changeTurn();
+        checkWinnerOnClick(game.players[game.activePlayer]);
+        if (getState().gameOver === false) {
+            changeTurn();
         }
     };
+
+    const getPlayerBoard = (board,playerID) => {
+        filteredArray = board.reduce(function(previousValue,currentValue, currentIndex) {
+            // console.log(currentIndex);
+            if (parseInt(currentValue) === playerID) {
+                // console.log(currentValue,currentIndex);
+                previousValue.push(currentIndex.toString());
+            } 
+            return previousValue
+        },[])
+        // console.log(filteredArray);
+        return filteredArray
+    };
+
+    // Helper function that takes an array representation of a board and a playerID.
+    // returns a string with the cell numbers of the winning triplet if it's a win
+    // returns false if not a win
+    // examples:
+    // isWin([ null, "0", "0", "1", "1", "1", null, "0", null ],0) // returns false
+    // isWin([ "0", "1", "1", null, "0", null, null, null, "0" ],0) // returns "048"
+    const isWin = (board,playerID) => {
+        // get an array containing all cells marked by the desired player
+        let playerState = getPlayerBoard(board,playerID);
+        // console.log(`Current board state for ${player.playerName}: ${playerState}`);
+
+        let match = false;
+        // loop through all possible winning triplets and check if one of them is a subset of the player's state
+        for (const candidate of winmap) {
+            // console.log(`checking if current state contains all cells in ${candidate}`);
+            if (isSubset([...candidate], playerState)) {
+                // if a match is found, store it in a variable
+                match = candidate;
+            }
+        }
+        return match
+    }
 
     return {
         startGame,
@@ -191,6 +213,7 @@ const GameController = (() => {
         clickCell,
         changeTurn,
         checkWinnerOnClick,
+        getPlayerBoard
     };
 })();
 
@@ -227,15 +250,13 @@ document.querySelector("#start-btn").addEventListener("click", clickStart);
 
 // Testing for a draw
 // GameController.startGame('Tizio','Caio');
-// Gameboard.mark(0,'cross');
-// Gameboard.mark(4,'circle');
-// Gameboard.mark(8,'cross');
-// Gameboard.mark(1,'circle');
-// Gameboard.mark(7,'cross');
-// Gameboard.mark(6,'circle');
-// Gameboard.mark(2,'cross');
-// Gameboard.mark(3,'circle');
-// Gameboard.mark(5,'cross');
-// GameController.checkWinnerOnClick(0,GameController.getState().players[0])
+// GameController.clickCell(0);
+// GameController.clickCell(4);
+// GameController.clickCell(8);
+// GameController.clickCell(1);
+// GameController.clickCell(7);
+// GameController.clickCell(6);
+// GameController.clickCell(2);
+// GameController.clickCell(5);
+// GameController.clickCell(3);
 
-// console.log(GameController.checkWinnerOnClick(GameController.getState().players[0]))
