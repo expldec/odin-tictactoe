@@ -58,6 +58,14 @@ html {
     line-height: 0;
 }
 
+.cell.win {
+    background-color: pink;
+}
+
+.cell.draw {
+    background-color: lightsalmon;
+}
+
 .cell.cross::after {
     content: '\002716';
 }
